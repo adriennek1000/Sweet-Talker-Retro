@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sweet Talker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: one desk-top toy, centred. Top to bottom: nameplate, display window, faders,
+     soundboard pads, keyboard, action keys. One committed look, so a single theme. */
+  :root {
+    --desk: #d4cbd6;
+    --desk-ink: #2d2431;
+    --case: #d63f7c;
+    --case-hi: #e8619a;
+    --case-lo: #9a2358;
+    --case-ink: #2b0f1c;
+    --bezel: #26211e;
+    --glass: #14070f;
+    --vfd: #ffc6e6;
+    --vfd-off: #3a1230;
+    --key: #efe6cf;
+    --key-low: #e2d7b9;
+    --key-edge: #c2b58f;
+    --key-ink: #2a2420;
+    --pad: #2f2a27;
+    --pad-edge: #151211;
+    --pad-ink: #f1e8d2;
+    --say: #6a3fc9;
+    --say-edge: #3f2287;
+    --spell: #f3b61f;
+    --spell-edge: #a87a05;
+    --focus: #2a1a9e;
+    --f-label: 'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue', sans-serif;
+    --f-mono: 'DM Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--desk); }
+  body {
+    color: var(--desk-ink);
+    font-family: var(--f-label);
+    padding-block: 28px 44px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    -webkit-tap-highlight-color: transparent;
+  }
+  button { font: inherit; color: inherit; border: 0; margin: 0; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  .stage { max-width: 560px; margin: 0 auto; display: grid; gap: 20px; }
+
+  .toy {
+    min-width: 0;
+    display: grid;
+    gap: 16px;
+    padding: 18px 18px 24px;
+    border-radius: 28px 28px 20px 20px;
+    color: var(--case-ink);
+    background: linear-gradient(180deg, var(--case-hi) 0, var(--case) 90px, var(--case) 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), inset 0 -7px 0 var(--case-lo), 0 22px 30px -14px rgba(30, 32, 28, .6);
+  }
+
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .grille { display: flex; gap: 6px; flex: none; }
+  .grille i { display: block; width: 5px; height: 30px; border-radius: 3px; background: rgba(43, 15, 28, .6); box-shadow: 0 1px 0 rgba(255, 255, 255, .25); }
+  .nameplate { min-width: 0; text-align: center; }
+  .nameplate h1 { margin: 0; font-size: clamp(1.55rem, 7vw, 2.25rem); line-height: 1; font-weight: 700; font-style: italic; letter-spacing: .07em; text-transform: uppercase; text-wrap: balance; }
+  .nameplate p { margin: 5px 0 0; font: 500 .68rem/1 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; }
+  .led { flex: none; width: 16px; height: 16px; border-radius: 50%; background: #6e1236; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .6), 0 1px 0 rgba(255, 255, 255, .3); }
+  .toy.is-speaking .led { background: #ffe3f1; box-shadow: 0 0 0 2px #ff8fc4, 0 0 14px 5px #ffa9d2; }
+
+  .bezel { background: var(--bezel); padding: 12px; border-radius: 14px; box-shadow: inset 0 2px 5px rgba(0, 0, 0, .7), 0 1px 0 rgba(255, 255, 255, .3); }
+  .glass { background: var(--glass); border-radius: 8px; padding: 10px 8px; box-shadow: inset 0 0 18px rgba(0, 0, 0, .9); }
+  #vfd { display: block; width: 100%; height: 64px; }
+
+  .tag { display: flex; align-items: center; gap: 10px; font: 500 .7rem/1 var(--f-mono); letter-spacing: .18em; text-transform: uppercase; }
+  .tag::after { content: ""; flex: 1; height: 1px; background: rgba(43, 15, 28, .45); }
+
+  .faders { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .fader { display: grid; gap: 2px; min-width: 0; }
+  .fader .top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .fader .name { font-weight: 700; font-size: 1.05rem; letter-spacing: .1em; text-transform: uppercase; }
+  .fader output { font: 400 .72rem/1 var(--f-mono); white-space: nowrap; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 30px; margin: 0; background: transparent; cursor: pointer; }
+  input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--bezel); box-shadow: inset 0 1px 2px #000; }
+  input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--bezel); box-shadow: inset 0 1px 2px #000; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 28px; margin-top: -11px; border-radius: 4px; border: 1px solid rgba(0, 0, 0, .45); background: linear-gradient(var(--key), var(--key-low)); box-shadow: 0 2px 0 var(--key-edge), 0 3px 4px rgba(0, 0, 0, .35); }
+  input[type=range]::-moz-range-thumb { width: 16px; height: 26px; border-radius: 4px; border: 1px solid rgba(0, 0, 0, .45); background: linear-gradient(var(--key), var(--key-low)); box-shadow: 0 2px 0 var(--key-edge), 0 3px 4px rgba(0, 0, 0, .35); }
+
+  .pads { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .pad { min-height: 54px; padding: 8px 10px; border-radius: 8px; text-align: left; display: flex; align-items: flex-end; background: var(--pad); color: var(--pad-ink); font-weight: 600; font-size: 1.02rem; line-height: 1.02; letter-spacing: .05em; text-transform: uppercase; box-shadow: 0 3px 0 var(--pad-edge), 0 5px 6px rgba(0, 0, 0, .25); }
+  .pad:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--pad-edge); }
+  .pad.is-playing { background: #3a1230; color: var(--vfd); }
+
+  .keys { display: grid; gap: 7px; }
+  .row { display: flex; gap: 5px; }
+  .row.r3 { padding-inline: 5%; }
+  .row.r4 { padding-inline: 15%; }
+  .key { flex: 1 1 0; min-width: 0; height: 42px; padding: 0; border-radius: 7px; background: linear-gradient(var(--key), var(--key-low)); color: var(--key-ink); font-weight: 600; font-size: 1.14rem; letter-spacing: .02em; box-shadow: 0 3px 0 var(--key-edge), 0 5px 6px rgba(0, 0, 0, .25); }
+  .key:active, .key.hit { transform: translateY(2px); box-shadow: 0 1px 0 var(--key-edge); }
+  .key.wide { text-transform: uppercase; font-size: .95rem; letter-spacing: .1em; }
+
+  .actions { display: grid; grid-template-columns: 1.4fr 1.4fr 1fr 1fr; gap: 8px; }
+  .act { min-height: 50px; padding: 6px 8px; border-radius: 9px; font-weight: 700; font-size: 1.15rem; letter-spacing: .08em; text-transform: uppercase; line-height: 1.05; box-shadow: 0 4px 0 var(--pad-edge), 0 6px 7px rgba(0, 0, 0, .25); background: var(--pad); color: var(--pad-ink); }
+  .act:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--pad-edge); }
+  .act.say { background: var(--say); color: #fff; box-shadow: 0 4px 0 var(--say-edge), 0 6px 7px rgba(0, 0, 0, .25); }
+  .act.say:active { box-shadow: 0 1px 0 var(--say-edge); }
+  .act.spell { background: var(--spell); color: #2a1d02; box-shadow: 0 4px 0 var(--spell-edge), 0 6px 7px rgba(0, 0, 0, .25); }
+  .act.spell:active { box-shadow: 0 1px 0 var(--spell-edge); }
+  .act.small { font-size: .95rem; }
+  .act[aria-pressed="true"] { background: #3a1230; color: var(--vfd); }
+
+  .note { margin: 0 auto; max-width: 52ch; text-align: center; font: 400 .76rem/1.55 var(--f-mono); }
+
+  @media (max-width: 460px) {
+    .pads { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .toy { padding: 14px 12px 20px; }
+    .faders { gap: 10px; }
+    .key { height: 44px; font-size: 1.06rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  body { margin: 0; }
+</style>
+
+</head>
+<body>
+<main class="stage">
+  <div class="toy" id="toy" role="group" aria-label="Sweet Talker toy">
+    <div class="head">
+      <div class="grille" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="nameplate">
+        <h1>Sweet Talker</h1>
+        <p>Type it. Hear her.</p>
+      </div>
+      <div class="led" id="led" aria-hidden="true"></div>
+    </div>
+
+    <div class="bezel"><div class="glass"><canvas id="vfd" role="img" aria-label="Display"></canvas></div></div>
+    <div class="sr-only" id="live" aria-live="polite"></div>
+
+    <div class="faders">
+      <label class="fader" for="pitch"><span class="top"><span class="name">Pitch</span><output id="pitchOut" for="pitch"></output></span><input id="pitch" type="range" min="60" max="170" value="100"></label>
+      <label class="fader" for="speed"><span class="top"><span class="name">Speed</span><output id="speedOut" for="speed"></output></span><input id="speed" type="range" min="65" max="150" value="100"></label>
+      <label class="fader" for="grit"><span class="top"><span class="name">Grit</span><output id="gritOut" for="grit"></output></span><input id="grit" type="range" min="0" max="100" value="35"></label>
+    </div>
+
+    <div class="tag">Soundboard</div>
+    <div class="pads" id="pads"></div>
+
+    <div class="tag">Keyboard</div>
+    <div class="keys" id="keys"></div>
+
+    <div class="actions">
+      <button class="act say" id="say" type="button">Say it</button>
+      <button class="act spell" id="spell" type="button">Spell it</button>
+      <button class="act small" id="echo" type="button" aria-pressed="false">Echo keys: off</button>
+      <button class="act small" id="clear" type="button">Clear</button>
+    </div>
+  </div>
+  <p class="note">The voice is built in your page: letters become sounds, a higher, slightly breathy source runs through three shorter-throat formant filters, and the result is sampled at 8 kHz and crushed to the bit depth set by Grit. Type on your keyboard or tap the keys, then press Enter.</p>
+</main>
+
+<script>
+/* Retro voice: letter-to-sound rules + a small formant synthesizer at 8 kHz. */
+(function (root) {
+  'use strict';
+
+  var SR = 8000;
+  var FRAME = 20;                       // samples per control frame (2.5 ms)
+  var FMS = FRAME / SR * 1000;
+  var BASE_F0 = 112;
+  var NOISE_REF = 0.8;                  // noise level that matches a vowel at af = 1
+
+  /* ---------- phoneme table ---------- */
+  var PH = {};
+  function vow(n, f1, f2, f3, d) { PH[n] = { t: 'v', f: [f1, f2, f3], d: d || 100 }; }
+  vow('IY', 270, 2290, 3010, 105);
+  vow('IH', 390, 1990, 2550, 80);
+  vow('EH', 530, 1840, 2480, 92);
+  vow('AE', 660, 1720, 2410, 115);
+  vow('AA', 730, 1090, 2440, 120);
+  vow('AO', 570, 840, 2410, 120);
+  vow('UH', 440, 1020, 2240, 82);
+  vow('UW', 300, 870, 2240, 115);
+  vow('AH', 640, 1190, 2390, 88);
+  vow('AX', 500, 1500, 2500, 62);
+  vow('ER', 490, 1350, 1690, 125);
+  function dip(n, a, b, d) { PH[n] = { t: 'd', f: a, g: b, d: d || 170 }; }
+  dip('EY', [530, 1840, 2480], [330, 2200, 2800], 165);
+  dip('AY', [730, 1090, 2440], [350, 2100, 2800], 185);
+  dip('OY', [570, 840, 2410], [350, 2100, 2800], 195);
+  dip('AW', [730, 1090, 2440], [330, 900, 2200], 185);
+  dip('OW', [570, 900, 2300], [320, 800, 2200], 165);
+  function stop(n, voiced, locus, nf, nb, af) { PH[n] = { t: 's', v: voiced, l: locus, nf: nf, nb: nb, af: af }; }
+  stop('P', false, 900, 1100, 1600, 0.45);
+  stop('B', true, 900, 1100, 1600, 0.3);
+  stop('T', false, 1800, 3200, 1400, 0.7);
+  stop('D', true, 1800, 3200, 1400, 0.42);
+  stop('K', false, 1900, 2000, 1300, 0.6);
+  stop('G', true, 1900, 2000, 1300, 0.38);
+  function fric(n, voiced, nf, nb, af, d, av) { PH[n] = { t: 'f', v: voiced, nf: nf, nb: nb, af: af, d: d, av: av || 0 }; }
+  fric('F', false, 2600, 2600, 0.24, 95);
+  fric('V', true, 2600, 2600, 0.18, 70, 0.5);
+  fric('TH', false, 2800, 2800, 0.22, 90);
+  fric('DH', true, 2800, 2800, 0.14, 50, 0.5);
+  fric('S', false, 3300, 1300, 0.7, 115);
+  fric('Z', true, 3300, 1300, 0.42, 90, 0.5);
+  fric('SH', false, 2300, 1200, 0.7, 120);
+  fric('ZH', true, 2300, 1200, 0.42, 95, 0.5);
+  fric('HH', false, 1500, 2600, 0.28, 70);
+  PH.M = { t: 'n', f: [250, 1100, 2200], d: 85 };
+  PH.N = { t: 'n', f: [250, 1600, 2600], d: 80 };
+  PH.NG = { t: 'n', f: [250, 2000, 2700], d: 90 };
+  PH.L = { t: 'l', f: [360, 1300, 2500], d: 78 };
+  PH.R = { t: 'l', f: [310, 1060, 1380], d: 80 };
+  PH.W = { t: 'l', f: [290, 610, 2150], d: 72 };
+  PH.Y = { t: 'l', f: [260, 2070, 3020], d: 72 };
+  var MACRO = { CH: ['T', 'SH'], JH: ['D', 'ZH'] };
+
+  /* ---------- letter names, numbers ---------- */
+  var LETTER = {
+    A: 'EY', B: 'B IY', C: 'S IY', D: 'D IY', E: 'IY', F: 'EH F', G: 'JH IY', H: 'EY CH', I: 'AY',
+    J: 'JH EY', K: 'K EY', L: 'EH L', M: 'EH M', N: 'EH N', O: 'OW', P: 'P IY', Q: 'K Y UW',
+    R: 'AA R', S: 'EH S', T: 'T IY', U: 'Y UW', V: 'V IY', W: 'D AH B AX L Y UW', X: 'EH K S',
+    Y: 'W AY', Z: 'Z IY'
+  };
+  var ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
+    'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  var TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+  function numWords(n) {
+    if (n < 20) return ONES[n];
+    if (n < 100) return TENS[(n / 10) | 0] + (n % 10 ? ' ' + ONES[n % 10] : '');
+    if (n < 1000) return ONES[(n / 100) | 0] + ' hundred' + (n % 100 ? ' ' + numWords(n % 100) : '');
+    return numWords((n / 1000) | 0) + ' thousand' + (n % 1000 ? ' ' + numWords(n % 1000) : '');
+  }
+  function numberWords(tok) {
+    if (tok.length > 6 || /^0\d/.test(tok)) return tok.split('').map(function (d) { return ONES[+d]; });
+    return numWords(parseInt(tok, 10)).split(' ');
+  }
+
+  /* ---------- pronunciation dictionary (irregular words) ---------- */
+  var DICT = {
+    a: 'AX', the: 'DH AX', to: 'T UW', of: 'AH V', and: 'AE N D', is: 'IH Z', as: 'AE Z', has: 'HH AE Z',
+    his: 'HH IH Z', was: 'W AH Z', you: 'Y UW', your: 'Y AO R', youre: 'Y UH R', are: 'AA R',
+    one: 'W AH N', once: 'W AH N S', two: 'T UW', three: 'TH R IY', four: 'F AO R', five: 'F AY V',
+    six: 'S IH K S', seven: 'S EH V AX N', eight: 'EY T', nine: 'N AY N', ten: 'T EH N',
+    eleven: 'IH L EH V AX N', twelve: 'T W EH L V', thirteen: 'TH ER T IY N', fourteen: 'F AO R T IY N',
+    fifteen: 'F IH F T IY N', sixteen: 'S IH K S T IY N', seventeen: 'S EH V AX N T IY N',
+    eighteen: 'EY T IY N', nineteen: 'N AY N T IY N', twenty: 'T W EH N T IY', thirty: 'TH ER T IY',
+    forty: 'F AO R T IY', fifty: 'F IH F T IY', sixty: 'S IH K S T IY', seventy: 'S EH V AX N T IY',
+    eighty: 'EY T IY', ninety: 'N AY N T IY', hundred: 'HH AH N D R AX D', thousand: 'TH AW Z AX N D',
+    zero: 'Z IY R OW', hello: 'HH AX L OW', hi: 'HH AY', hey: 'HH EY', correct: 'K AX R EH K T',
+    incorrect: 'IH N K AX R EH K T', that: 'DH AE T', this: 'DH IH S', these: 'DH IY Z', those: 'DH OW Z',
+    they: 'DH EY', them: 'DH EH M', then: 'DH EH N', there: 'DH EH R', their: 'DH EH R', than: 'DH AE N',
+    with: 'W IH TH', what: 'W AH T', who: 'HH UW', whom: 'HH UW M', why: 'W AY', how: 'HH AW', now: 'N AW',
+    know: 'N OW', show: 'SH OW', grow: 'G R OW', low: 'L OW', slow: 'S L OW', snow: 'S N OW', blow: 'B L OW',
+    flow: 'F L OW', throw: 'TH R OW', own: 'OW N', window: 'W IH N D OW', yellow: 'Y EH L OW',
+    tomorrow: 'T AX M AA R OW', again: 'AX G EH N', word: 'W ER D', world: 'W ER L D', said: 'S EH D',
+    says: 'S EH Z', have: 'HH AE V', give: 'G IH V', live: 'L IH V', love: 'L AH V', come: 'K AH M',
+    some: 'S AH M', done: 'D AH N', gone: 'G AO N', do: 'D UW', does: 'D AH Z', no: 'N OW', go: 'G OW',
+    so: 'S OW', be: 'B IY', he: 'HH IY', she: 'SH IY', we: 'W IY', me: 'M IY', my: 'M AY', by: 'B AY',
+    all: 'AO L', ball: 'B AO L', call: 'K AO L', fall: 'F AO L', tall: 'T AO L', wall: 'W AO L',
+    small: 'S M AO L', hall: 'HH AO L', talk: 'T AO K', walk: 'W AO K', water: 'W AO T ER', good: 'G UH D',
+    book: 'B UH K', look: 'L UH K', took: 'T UH K', could: 'K UH D', would: 'W UH D', should: 'SH UH D',
+    put: 'P UH T', full: 'F UH L', pull: 'P UH L', push: 'P UH SH', job: 'JH AA B', robot: 'R OW B AA T',
+    computer: 'K AX M P Y UW T ER', yes: 'Y EH S', okay: 'OW K EY', ok: 'OW K EY', i: 'AY', im: 'AY M',
+    am: 'AE M', mother: 'M AH DH ER', brother: 'B R AH DH ER', other: 'AH DH ER', father: 'F AA DH ER',
+    people: 'P IY P AX L', friend: 'F R EH N D', great: 'G R EY T', break: 'B R EY K', head: 'HH EH D',
+    bread: 'B R EH D', read: 'R IY D', ready: 'R EH D IY', very: 'V EH R IY', every: 'EH V R IY',
+    many: 'M EH N IY', any: 'EH N IY', because: 'B IH K AO Z', about: 'AX B AW T', above: 'AX B AH V',
+    away: 'AX W EY', baby: 'B EY B IY', please: 'P L IY Z', welcome: 'W EH L K AH M', get: 'G EH T',
+    girl: 'G ER L', gift: 'G IH F T', begin: 'B IH G IH N', over: 'OW V ER', learn: 'L ER N', earth: 'ER TH',
+    music: 'M Y UW Z IH K', school: 'S K UW L', our: 'AW ER', hour: 'AW ER', where: 'W EH R',
+    were: 'W ER', here: 'HH IY R', its: 'IH T S', dont: 'D OW N T', cant: 'K AE N T', wont: 'W OW N T',
+    lets: 'L EH T S', thats: 'DH AE T S', whats: 'W AH T S', neat: 'N IY T', cool: 'K UW L',
+    mouse: 'M AW S', house: 'HH AW S', use: 'Y UW Z', also: 'AO L S OW', always: 'AO L W EY Z',
+    beautiful: 'B Y UW T AX F AX L', through: 'TH R UW', though: 'DH OW', enough: 'IH N AH F',
+    eyes: 'AY Z', eye: 'AY', die: 'D AY', pie: 'P AY', tie: 'T AY', lie: 'L AY'
+  };
+
+  /* ---------- letter-to-sound rules (first match wins) ---------- */
+  var RULES = [];
+  function r(match, ph, before) {
+    RULES.push({ re: new RegExp(match, 'y'), ph: ph ? ph.split(' ') : [], b: before ? new RegExp(before) : null });
+  }
+  var C = 'bcdfgklmnprstvz';
+  // word starts
+  r('kn', 'N', '^$'); r('gn', 'N', '^$'); r('wr', 'R', '^$'); r('wh', 'W', '^$'); r('x', 'Z', '^$');
+  r('gh', 'G', '^$'); r('y(?=[aeiou])', 'Y', '^$');
+  // endings
+  r('stion$', 'S CH AX N'); r('tion$', 'SH AX N'); r('sion$', 'ZH AX N'); r('ture$', 'CH ER'); r('ous$', 'AX S');
+  r('ed$', 'IH D', '[aeiouy].*[td]~?$'); r('ed$', 'T', '[aeiouy].*([pkfsx]|ch|sh)~?$'); r('ed$', 'D', '[aeiouy]');
+  r('es$', 'IH Z', '[aeiouy].*([sxz]|ch|sh)~?$'); r('es$', 'S', '[aeiouy].*[pkft]~?$'); r('es$', 'Z', '[aeiouy]');
+  r('le$', 'AX L', '[^aeiouy]$');
+  r('are$', 'EH R'); r('ore$', 'AO R'); r('ire$', 'AY ER'); r('ure$', 'Y ER');
+  r('e$', '', '[aeiouy][^aeiouy]+$'); r('e$', 'IY', '^[^aeiouy]+$');
+  // vowel groups
+  r('a(?=tur)', 'EY'); r('y(?=ing)', 'AY'); r('oo(?=k)', 'UH'); r('a', 'AA', '^w$'); r('eigh', 'EY'); r('igh', 'AY'); r('augh', 'AO'); r('air', 'EH R'); r('eer', 'IY R'); r('ear', 'IY R');
+  r('our', 'AO R'); r('ar', 'AA R'); r('or', 'AO R'); r('er', 'ER'); r('ir', 'ER'); r('ur', 'ER'); r('yr', 'ER');
+  r('ai', 'EY'); r('ay', 'EY'); r('au', 'AO'); r('aw', 'AO'); r('ee', 'IY'); r('ea', 'IY'); r('ei', 'IY');
+  r('ey$', 'EY', '^[^aeiouy]+$'); r('ey$', 'IY'); r('ie$', 'AY'); r('ie', 'IY'); r('oa', 'OW');
+  r('oi', 'OY'); r('oy', 'OY'); r('oo', 'UW'); r('ou', 'AW'); r('ow$', 'OW'); r('ow', 'AW');
+  r('ue', 'UW'); r('ui', 'UW'); r('ew', 'UW');
+  [['a', 'EY'], ['i', 'AY'], ['o', 'OW'], ['u', 'UW']].forEach(function (p) {
+    r(p[0] + '(?=[' + C + ']e[sd]?$)', p[1]);
+    r(p[0] + '(?=[' + C + ']le$)', p[1]);
+  });
+  r('a$', 'AX'); r('o$', 'OW'); r('i$', 'IY'); r('u$', 'UW');
+  r('y$', 'AY', '^[^aeiouy]+$'); r('y$', 'IY'); r('y', 'IH');
+  // consonant groups
+  r('tch', 'CH'); r('ch', 'CH'); r('sh', 'SH'); r('th', 'TH'); r('ph', 'F'); r('gh', ''); r('ng', 'NG');
+  r('nk', 'NG K'); r('ck', 'K'); r('qu', 'K W'); r('q', 'K'); r('mb$', 'M'); r('c(?=[eiy])', 'S'); r('c', 'K');
+  r('g(?=[eiy])', 'JH'); r('g', 'G'); r('j', 'JH'); r('x', 'K S');
+  r('s$', 'Z', '[aeioubdgjlmnrvwyz]$'); r('s(?=[aeiouy])', 'Z', '[aeiouy]$'); r('s', 'S');
+  r('b', 'B'); r('d', 'D'); r('f', 'F'); r('h', 'HH'); r('k', 'K'); r('l', 'L'); r('m', 'M'); r('n', 'N');
+  r('p', 'P'); r('r', 'R'); r('t', 'T'); r('v', 'V'); r('w', 'W'); r('z', 'Z');
+  // short vowels
+  r('a', 'AE'); r('e', 'EH'); r('i', 'IH'); r('o', 'AA'); r('u', 'AH');
+
+  function g2p(raw) {
+    var w = String(raw).toLowerCase().replace(/[^a-z]/g, '');
+    if (!w) return [];
+    if (Object.prototype.hasOwnProperty.call(DICT, w)) return DICT[w].split(' ');
+    w = w.replace(/([bcdfghjklmnpqrstvwxz])\1/g, '$1~');
+    var out = [], i = 0;
+    while (i < w.length) {
+      var prefix = w.slice(0, i), hit = false;
+      for (var k = 0; k < RULES.length; k++) {
+        var R = RULES[k];
+        if (R.b && !R.b.test(prefix)) continue;
+        R.re.lastIndex = i;
+        var m = R.re.exec(w);
+        if (m && m[0].length > 0) {
+          for (var j = 0; j < R.ph.length; j++) out.push(R.ph[j]);
+          i += m[0].length;
+          hit = true;
+          break;
+        }
+      }
+      if (!hit) i++;
+    }
+    return out;
+  }
+
+  /* ---------- text to a list of word items ---------- */
+  function textToItems(text) {
+    var toks = String(text).match(/[A-Za-z]+(?:'[A-Za-z]+)*|\d+|[.,!?;:]/g) || [];
+    var items = [], phrase = [];
+    function push(w, label) {
+      var ph = g2p(w);
+      if (!ph.length) return;
+      var it = { label: (label || w).toUpperCase(), ph: ph, pause: 70 };
+      phrase.push(it); items.push(it);
+    }
+    function endPhrase(pause, kind) {
+      if (!phrase.length) return;
+      phrase.forEach(function (it, i) {
+        it.pos = i; it.n = phrase.length;
+        if (kind === '?' && i === phrase.length - 1) it.q = true;
+        if (kind === '!') it.ex = true;
+      });
+      phrase[phrase.length - 1].pause = pause;
+      phrase = [];
+    }
+    toks.forEach(function (t) {
+      if (/^\d/.test(t)) numberWords(t).forEach(function (w) { push(w); });
+      else if (/^[.,!?;:]$/.test(t)) endPhrase(t === ',' || t === ';' || t === ':' ? 230 : 400, t);
+      else push(t);
+    });
+    endPhrase(0, '');
+    return items;
+  }
+  function letterItem(ch) {
+    ch = String(ch).toUpperCase();
+    if (!LETTER[ch]) return null;
+    return { label: ch, ph: LETTER[ch].split(' '), pause: 200, pos: 0, n: 1 };
+  }
+  function spellItems(text, opts) {
+    opts = opts || {};
+    var words = String(text).toUpperCase().match(/[A-Z]+/g) || [];
+    var items = [];
+    words.forEach(function (w) {
+      var wi = textToItems(w)[0];
+      if (!wi) return;
+      if (opts.lead !== false) { wi.pause = 380; items.push(wi); }
+      w.split('').forEach(function (ch, i) {
+        var li = letterItem(ch);
+        li.pause = i === w.length - 1 ? 420 : 250;
+        items.push(li);
+      });
+      var again = textToItems(w)[0];
+      again.pause = 620; again.pos = 0; again.n = 1;
+      items.push(again);
+    });
+    return items;
+  }
+
+  /* ---------- synthesis ---------- */
+  var seed = 12345;
+  function rnd() { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return ((seed >>> 0) / 4294967296); }
+
+  function frameCount(ms) { return Math.max(1, Math.round(ms / FMS)); }
+  function mk(f, av, af, nf, nb, stress) { return { f: f, av: av, af: af, nf: nf || 2500, nb: nb || 2000, m: null, s: !!stress }; }
+  function silence(frames, ms) {
+    var n = frameCount(ms);
+    for (var i = 0; i < n; i++) frames.push(mk(null, 0, 0));
+  }
+  function expand(frames, sym, ds, stress) {
+    var P = PH[sym], i, n;
+    if (!P) {
+      if (MACRO[sym]) MACRO[sym].forEach(function (s) { expand(frames, s, ds * 0.85, false); });
+      return;
+    }
+    if (P.t === 'v') {
+      n = frameCount(P.d * ds);
+      for (i = 0; i < n; i++) frames.push(mk(P.f, 1, 0, 0, 0, stress));
+    } else if (P.t === 'd') {
+      n = frameCount(P.d * ds);
+      for (i = 0; i < n; i++) {
+        var w = Math.min(1, Math.max(0, (i / n - 0.3) / 0.5));
+        frames.push(mk([0, 1, 2].map(function (k) { return P.f[k] + (P.g[k] - P.f[k]) * w; }), 1, 0, 0, 0, stress));
+      }
+    } else if (P.t === 's') {
+      var closure = frameCount((P.v ? 42 : 58) * ds);
+      for (i = 0; i < closure; i++) frames.push(mk([300, P.l, 2400], P.v ? 0.28 : 0, 0));
+      var burst = frameCount(9);
+      for (i = 0; i < burst; i++) frames.push(mk([300, P.l, 2400], P.v ? 0.3 : 0, P.af, P.nf, P.nb));
+      if (!P.v) {
+        var asp = frameCount(20 * ds);
+        for (i = 0; i < asp; i++) frames.push(mk([500, P.l, 2400], 0, 0.2, 1500, 2600));
+      }
+    } else if (P.t === 'f') {
+      n = frameCount(P.d * ds);
+      for (i = 0; i < n; i++) frames.push(mk(P.v ? [250, 1400, 2300] : null, P.av, P.af, P.nf, P.nb));
+    } else if (P.t === 'n') {
+      n = frameCount(P.d * ds);
+      for (i = 0; i < n; i++) frames.push(mk(P.f, 0.55, 0));
+    } else if (P.t === 'l') {
+      n = frameCount(P.d * ds);
+      for (i = 0; i < n; i++) frames.push(mk(P.f, 0.85, 0));
+    }
+  }
+
+  function resCoef(F, BW) {
+    F = Math.min(3800, Math.max(100, F));
+    var c = -Math.exp(-2 * Math.PI * BW / SR);
+    var b = 2 * Math.exp(-Math.PI * BW / SR) * Math.cos(2 * Math.PI * F / SR);
+    return [1 - b - c, b, c];
+  }
+
+  function smooth(fr) {
+    var curF = [500, 1500, 2500], curM = 1, i, k;
+    for (i = 0; i < fr.length; i++) {
+      if (fr[i].f) curF = fr[i].f; else fr[i].f = curF;
+      if (fr[i].m !== null) curM = fr[i].m; else fr[i].m = curM;
+    }
+    var aF = 1 - Math.exp(-FMS / 14), aV = 1 - Math.exp(-FMS / 5), aN = 1 - Math.exp(-FMS / 3), aM = 1 - Math.exp(-FMS / 30);
+    var s = { f: fr[0].f.slice(), av: 0, af: 0, m: fr[0].m };
+    for (i = 0; i < fr.length; i++) {
+      for (k = 0; k < 3; k++) s.f[k] += aF * (fr[i].f[k] - s.f[k]);
+      s.av += aV * (fr[i].av - s.av);
+      s.af += aN * (fr[i].af - s.af);
+      s.m += aM * (fr[i].m - s.m);
+      fr[i].sf = s.f.slice(); fr[i].sav = s.av; fr[i].saf = s.af; fr[i].sm = s.m;
+    }
+  }
+
+  function render(items, o) {
+    o = o || {};
+    var pitch = o.pitch || 1, speed = o.speed || 1, bits = o.bits || 7;
+    var base = o.base || BASE_F0, fm = o.formant || 1, breath = o.breath || 0, infl = o.infl || 1;
+    var ds = 1 / speed;
+    var frames = [], marks = [];
+    seed = 12345;
+    silence(frames, 70);
+    items.forEach(function (it) {
+      if (!it.ph || !it.ph.length) return;
+      var start = frames.length;
+      it.ph.forEach(function (sym, i) {
+        var P = PH[sym];
+        var firstVowel = P && (P.t === 'v' || P.t === 'd') && !it.ph.slice(0, i).some(function (q) { return PH[q] && (PH[q].t === 'v' || PH[q].t === 'd'); });
+        expand(frames, sym, ds, firstVowel);
+      });
+      var end = frames.length, len = Math.max(1, end - start), n = it.n || 1, pos = it.pos || 0;
+      for (var i = start; i < end; i++) {
+        var prog = (i - start) / len;
+        var m = 1.07 - 0.17 * ((pos + prog) / n);
+        if (frames[i].s) m *= 1.1;
+        if (it.q && pos === n - 1) m *= 1 + 0.32 * prog * prog;
+        if (it.ex) m *= 1.07;
+        frames[i].m = 1 + (m - 1) * infl;
+      }
+      marks.push({ label: it.label, start: start * FRAME, end: end * FRAME });
+      silence(frames, (it.pause === undefined ? 90 : it.pause) * ds);
+    });
+    silence(frames, 160);
+    smooth(frames);
+
+    var total = frames.length * FRAME, out = new Float32Array(total);
+    var phase = 0, prevFlow = 0;
+    var y = [[0, 0], [0, 0], [0, 0], [0, 0]], ny = [0, 0];
+    var c4 = resCoef(3400 * fm, 320), BWS = [80, 120, 180];
+    var q = 0, fi, s, k;
+    for (fi = 0; fi < frames.length; fi++) {
+      var fr = frames[fi];
+      var cs = [0, 1, 2].map(function (kk) { return resCoef(fr.sf[kk] * fm, BWS[kk]); });
+      var f0 = base * pitch * fr.sm;
+      f0 = base * Math.pow(2, Math.round(Math.log(f0 / base) / Math.LN2 * 16) / 16);
+      var av = Math.round(fr.sav * 14) / 14;
+      var af = fr.saf;
+      var nc = resCoef(fr.nf * fm, Math.max(300, fr.nb));
+      var nvar = nc[0] * nc[0] * (1 - nc[2]) / ((1 + nc[2]) * ((1 - nc[2]) * (1 - nc[2]) - nc[1] * nc[1]));
+      var ng = NOISE_REF / Math.sqrt(nvar);
+      for (s = 0; s < FRAME; s++) {
+        phase += f0 / SR; if (phase >= 1) phase -= 1;
+        var flow = phase < 0.6 ? 0.5 * (1 - Math.cos(Math.PI * phase / 0.6)) : Math.cos(Math.PI * 0.5 * (phase - 0.6) / 0.4);
+        var x = (flow - prevFlow) * 25 * (base / f0) * av;
+        if (breath > 0) x += (rnd() * 2 - 1) * breath * av;
+        prevFlow = flow;
+        for (k = 0; k < 3; k++) {
+          var yy = cs[k][0] * x + cs[k][1] * y[k][0] + cs[k][2] * y[k][1];
+          y[k][1] = y[k][0]; y[k][0] = yy; x = yy;
+        }
+        var y4 = c4[0] * x + c4[1] * y[3][0] + c4[2] * y[3][1];
+        y[3][1] = y[3][0]; y[3][0] = y4;
+        var nz = (rnd() * 2 - 1) * 1.7320508;
+        var nyy = nc[0] * nz + nc[1] * ny[0] + nc[2] * ny[1];
+        ny[1] = ny[0]; ny[0] = nyy;
+        out[q++] = y4 + nyy * ng * af;
+      }
+    }
+    var peak = 0, i;
+    for (i = 0; i < total; i++) { var a = Math.abs(out[i]); if (a > peak) peak = a; }
+    var norm = peak > 0 ? 0.9 / peak : 1;
+    var lv = Math.pow(2, Math.max(2, bits) - 1);
+    for (i = 0; i < total; i++) out[i] = Math.round(out[i] * norm * lv) / lv;
+    return { samples: out, marks: marks, norm: norm, rate: SR };
+  }
+
+  var api = {
+    SR: SR, g2p: g2p, textToItems: textToItems, spellItems: spellItems, letterItem: letterItem,
+    render: render, numWords: numWords, hasLetter: function (c) { return !!LETTER[String(c).toUpperCase()]; }
+  };
+  root.Retro = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  if (window.__sweetTalkerStarted) return;
+  window.__sweetTalkerStarted = true;
+  var T = window.Retro;
+  var $ = function (id) { return document.getElementById(id); };
+  var CELLS = 16, MAXLEN = 96;
+
+  /* ---------- 14-segment font ---------- */
+  var SEG = {
+    a: [.2, .08, .8, .08], d: [.2, .92, .8, .92], b: [.88, .14, .88, .46], c: [.88, .54, .88, .86],
+    e: [.12, .54, .12, .86], f: [.12, .14, .12, .46], g: [.2, .5, .46, .5], G: [.54, .5, .8, .5],
+    i: [.5, .14, .5, .46], l: [.5, .54, .5, .86], h: [.2, .14, .44, .44], j: [.8, .14, .56, .44],
+    k: [.2, .86, .44, .56], m: [.8, .86, .56, .56]
+  };
+  var ORDER = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'G', 'h', 'i', 'j', 'k', 'l', 'm'];
+  var GLYPH = {
+    A: 'abcefgG', B: 'abcdilG', C: 'adef', D: 'abcdil', E: 'adefgG', F: 'aefgG', G: 'acdefG', H: 'bcefgG',
+    I: 'adil', J: 'bcde', K: 'efgjm', L: 'def', M: 'bcefhj', N: 'bcefhm', O: 'abcdef', P: 'abefgG',
+    Q: 'abcdefm', R: 'abefgGm', S: 'acdfgG', T: 'ail', U: 'bcdef', V: 'efjk', W: 'bcefkm', X: 'hjkm',
+    Y: 'hjl', Z: 'adjk', '0': 'abcdefjk', '1': 'bc', '2': 'abdegG', '3': 'abcdG', '4': 'bcfgG',
+    '5': 'acdfgG', '6': 'acdefgG', '7': 'abc', '8': 'abcdefgG', '9': 'abcdfgG', '-': 'gG', '_': 'd',
+    '?': 'abGl', '!': 'il', "'": 'i', '.': 'p', ',': 'p'
+  };
+
+  var canvas = $('vfd'), cx = canvas.getContext('2d');
+  var css = getComputedStyle(document.documentElement);
+  var ON = css.getPropertyValue('--vfd').trim() || '#ffc6e6';
+  var OFF = css.getPropertyValue('--vfd-off').trim() || '#3a1230';
+  var lastView = '';
+
+  function drawView(str) {
+    lastView = str;
+    var W = canvas.clientWidth || 320;
+    var cw = W / CELLS, bw = cw * 0.68, bh = bw / 0.6, padY = cw * 0.2, H = Math.ceil(bh + padY * 2);
+    var dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
+      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+      canvas.style.height = H + 'px';
+    }
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx.clearRect(0, 0, W, H);
+    cx.lineCap = 'round';
+    cx.lineWidth = Math.max(2, bw * 0.15);
+    for (var n = 0; n < CELLS; n++) {
+      var ch = (str.charAt(n) || ' ').toUpperCase();
+      var lit = GLYPH[ch] || '';
+      var ox = n * cw + (cw - bw) / 2, oy = padY, s, k, sg;
+      cx.shadowBlur = 0;
+      cx.strokeStyle = OFF;
+      for (k = 0; k < ORDER.length; k++) {
+        if (lit.indexOf(ORDER[k]) >= 0) continue;
+        sg = SEG[ORDER[k]];
+        cx.beginPath(); cx.moveTo(ox + sg[0] * bw, oy + sg[1] * bh); cx.lineTo(ox + sg[2] * bw, oy + sg[3] * bh); cx.stroke();
+      }
+      cx.strokeStyle = ON; cx.shadowColor = ON; cx.shadowBlur = bw * 0.45;
+      for (k = 0; k < ORDER.length; k++) {
+        if (lit.indexOf(ORDER[k]) < 0) continue;
+        sg = SEG[ORDER[k]];
+        cx.beginPath(); cx.moveTo(ox + sg[0] * bw, oy + sg[1] * bh); cx.lineTo(ox + sg[2] * bw, oy + sg[3] * bh); cx.stroke();
+      }
+      if (lit.indexOf('p') >= 0) {
+        cx.fillStyle = ON; cx.beginPath(); cx.arc(ox + bw * 0.96, oy + bh * 0.93, bw * 0.1, 0, 6.2832); cx.fill();
+      }
+    }
+    cx.shadowBlur = 0;
+    canvas.setAttribute('aria-label', 'Display shows ' + str.trim());
+  }
+
+  /* ---------- state ---------- */
+  var text = 'HELLO', echo = false, cursorOn = true;
+  var ctx = null, current = null, raf = 0, shown = null;
+  var toy = $('toy'), live = $('live');
+  var pitchEl = $('pitch'), speedEl = $('speed'), gritEl = $('grit');
+
+  function opts() {
+    return { pitch: pitchEl.value / 100, speed: speedEl.value / 100, bits: Math.round(10 - gritEl.value * 0.07), base: 200, formant: 1.17, breath: 0.2, infl: 1.5 };
+  }
+  function readouts() {
+    var o = opts();
+    $('pitchOut').textContent = Math.round(200 * o.pitch) + ' Hz';
+    $('speedOut').textContent = '×' + o.speed.toFixed(2);
+    $('gritOut').textContent = o.bits + '-bit';
+  }
+
+  function drawIdle() {
+    var tail = text.slice(-(CELLS - 1));
+    drawView(tail + (cursorOn ? '_' : ' '));
+  }
+
+  /* ---------- audio ---------- */
+  function audio() {
+    if (!ctx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function beep(freq, dur) {
+    var c = audio(); if (!c) return;
+    var o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
+    o.type = 'square'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.05, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+  function setPlaying(on) {
+    toy.classList.toggle('is-speaking', on);
+    if (!on) {
+      var ps = document.querySelectorAll('.pad.is-playing');
+      for (var i = 0; i < ps.length; i++) ps[i].classList.remove('is-playing');
+    }
+  }
+  function finish() {
+    cancelAnimationFrame(raf);
+    current = null; shown = null;
+    setPlaying(false);
+    drawIdle();
+  }
+  function stopSpeech() {
+    if (!current) return;
+    var s = current.src;
+    s.onended = null;
+    try { s.stop(); } catch (e) { /* already stopped */ }
+    finish();
+  }
+  function tick() {
+    if (!current) return;
+    var t = ctx.currentTime - current.t0, ms = current.res.marks, label = null;
+    for (var i = 0; i < ms.length; i++) {
+      if (t >= ms[i].start / T.SR && t < ms[i].end / T.SR) { label = ms[i].label; break; }
+    }
+    if (label !== null && label !== shown) { shown = label; drawView(label); }
+    raf = requestAnimationFrame(tick);
+  }
+  function play(res, padEl) {
+    var c = audio();
+    if (!c) { live.textContent = 'Audio is not available in this browser.'; return; }
+    stopSpeech();
+    var src8 = res.samples, ratio = c.sampleRate / T.SR, n = Math.ceil(src8.length * ratio);
+    var buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0), y = 0, i;
+    for (i = 0; i < n; i++) {
+      var x = src8[Math.min(src8.length - 1, (i / ratio) | 0)];
+      y += 0.6 * (x - y);
+      d[i] = y;
+    }
+    var src = c.createBufferSource(), g = c.createGain();
+    src.buffer = buf; g.gain.value = 0.9;
+    src.connect(g); g.connect(c.destination);
+    var t0 = c.currentTime + 0.03;
+    current = { src: src, t0: t0, res: res };
+    src.onended = function () { if (current && current.src === src) finish(); };
+    src.start(t0);
+    setPlaying(true);
+    if (padEl) padEl.classList.add('is-playing');
+    tick();
+  }
+  function speak(items, padEl) {
+    if (!items.length) { beep(160, 0.14); return; }
+    live.textContent = 'Saying ' + items.map(function (it) { return it.label; }).join(' ');
+    play(T.render(items, opts()), padEl);
+  }
+
+  var letterCache = {};
+  function echoLetter(ch) {
+    var it = T.letterItem(ch);
+    if (!it) { beep(900, 0.04); return; }
+    var o = opts(), key = ch + '|' + o.pitch + '|' + o.speed + '|' + o.bits;
+    if (!letterCache[key]) letterCache[key] = T.render([it], o);
+    play(letterCache[key]);
+  }
+
+  /* ---------- typing ---------- */
+  var keyEls = {};
+  function flash(ch) {
+    var el = keyEls[ch]; if (!el) return;
+    el.classList.add('hit');
+    setTimeout(function () { el.classList.remove('hit'); }, 90);
+  }
+  function typeChar(ch) {
+    if (current) stopSpeech();
+    flash(ch);
+    if (text.length >= MAXLEN) { beep(160, 0.12); return; }
+    text += ch;
+    cursorOn = true;
+    drawIdle();
+    if (echo && /[A-Z]/.test(ch)) echoLetter(ch); else beep(1180 + (ch.charCodeAt(0) % 7) * 40, 0.035);
+  }
+  function del() {
+    if (current) stopSpeech();
+    text = text.slice(0, -1);
+    drawIdle();
+    beep(700, 0.05);
+  }
+  function sayText(spell) {
+    var items = spell ? T.spellItems(text) : T.textToItems(text);
+    speak(items);
+  }
+
+  /* ---------- build keyboard and pads ---------- */
+  var keysEl = $('keys');
+  keysEl.textContent = '';
+  function addRow(cls, chars) {
+    var row = document.createElement('div');
+    row.className = 'row ' + cls;
+    chars.forEach(function (ch) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'key'; b.textContent = ch; b.setAttribute('data-ch', ch);
+      b.setAttribute('aria-label', 'Type ' + ch);
+      keyEls[ch] = b; row.appendChild(b);
+    });
+    keysEl.appendChild(row);
+  }
+  addRow('r1', '1234567890'.split(''));
+  addRow('r2', 'QWERTYUIOP'.split(''));
+  addRow('r3', 'ASDFGHJKL'.split(''));
+  addRow('r4', 'ZXCVBNM'.split(''));
+  (function () {
+    var row = document.createElement('div');
+    row.className = 'row r5';
+    ['?', '!', '.', ',', "'"].forEach(function (ch) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'key'; b.textContent = ch; b.setAttribute('data-ch', ch);
+      b.setAttribute('aria-label', 'Type ' + ch);
+      keyEls[ch] = b; row.appendChild(b);
+    });
+    var sp = document.createElement('button');
+    sp.type = 'button'; sp.className = 'key wide'; sp.textContent = 'Space'; sp.setAttribute('data-ch', ' ');
+    sp.style.flex = '4 1 0'; keyEls[' '] = sp; row.appendChild(sp);
+    var dl = document.createElement('button');
+    dl.type = 'button'; dl.className = 'key wide'; dl.textContent = 'Del'; dl.setAttribute('data-act', 'del');
+    dl.style.flex = '2 1 0'; dl.setAttribute('aria-label', 'Delete last character');
+    row.appendChild(dl);
+    keysEl.appendChild(row);
+  })();
+
+  var PADS = [
+    { label: 'Hello', text: 'HELLO' },
+    { label: 'That is correct', text: 'THAT IS CORRECT' },
+    { label: 'Try again', text: 'TRY AGAIN' },
+    { label: 'Spell cat', text: 'SPELL CAT', build: function () { return T.textToItems('Spell cat.').concat(T.spellItems('cat', { lead: false })); } },
+    { label: 'Good job', text: 'GOOD JOB' },
+    { label: 'I am a robot', text: 'I AM A ROBOT' },
+    { label: 'Count to ten', text: '1 2 3 4 5 6 7 8 9 10', say: '1, 2, 3, 4, 5, 6, 7, 8, 9, 10.' },
+    { label: 'Welcome home', text: 'WELCOME HOME' }
+  ];
+  var padsEl = $('pads');
+  padsEl.textContent = '';
+  PADS.forEach(function (p, idx) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'pad'; b.textContent = p.label; b.setAttribute('data-pad', String(idx));
+    padsEl.appendChild(b);
+  });
+
+  /* ---------- events ---------- */
+  toy.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if (!b) return;
+    if (e.detail > 0) b.blur();
+    if (b.hasAttribute('data-pad')) {
+      var p = PADS[+b.getAttribute('data-pad')];
+      text = p.text; cursorOn = true; drawIdle();
+      speak(p.build ? p.build() : T.textToItems(p.say || p.text), b);
+    } else if (b.hasAttribute('data-ch')) {
+      typeChar(b.getAttribute('data-ch'));
+    } else if (b.getAttribute('data-act') === 'del') {
+      del();
+    } else if (b.id === 'say') {
+      sayText(false);
+    } else if (b.id === 'spell') {
+      sayText(true);
+    } else if (b.id === 'echo') {
+      echo = !echo;
+      b.setAttribute('aria-pressed', String(echo));
+      b.textContent = 'Echo keys: ' + (echo ? 'on' : 'off');
+      beep(echo ? 1400 : 700, 0.06);
+    } else if (b.id === 'clear') {
+      stopSpeech(); text = ''; drawIdle(); beep(500, 0.08);
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target, k = e.key;
+    if (t && t.tagName === 'INPUT') return;
+    if (t && t.tagName === 'BUTTON' && (k === 'Enter' || k === ' ')) return;
+    if (k === 'Enter') { e.preventDefault(); sayText(false); }
+    else if (k === 'Backspace') { e.preventDefault(); del(); }
+    else if (k.length === 1 && /[A-Za-z0-9 .,?!']/.test(k)) { e.preventDefault(); typeChar(k.toUpperCase()); }
+  });
+
+  [pitchEl, speedEl, gritEl].forEach(function (el) {
+    el.addEventListener('input', readouts);
+    el.addEventListener('change', function () { if (ctx && text.trim()) sayText(false); });
+  });
+
+  /* ---------- start ---------- */
+  readouts();
+  drawIdle();
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { if (!current) drawIdle(); else drawView(lastView); }).observe(canvas.parentNode);
+  else window.addEventListener('resize', function () { drawView(lastView); });
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce) setInterval(function () { if (!current) { cursorOn = !cursorOn; drawIdle(); } }, 520);
+})();
+</script>
+</body>
+</html>
